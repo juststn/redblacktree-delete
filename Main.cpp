@@ -36,7 +36,10 @@ void printRow(int array[1000], int colorArray[1000], int cnt);
 void rotateLeft(TreeNode* &node);
 void rotateRight(TreeNode* &node);
 void printList(TreeNode* root);
-
+void restructure(TreeNode* &node);
+void deleteTree(TreeNode* &current, TreeNode* &treeRoot, int number);
+void searchTree(TreeNode* &current, TreeNode* root, int value, int &find);
+void deleteNode(TreeNode* &current, TreeNode* &treeRoot);
 
 int main(){
 
@@ -100,7 +103,7 @@ int main(){
   int looping=1;
   while (looping ==1) {
     //prompt input
-    cout << endl << "Enter command (add, print, printlist, exit):" << endl << "(\"printlist\" displays parent/value/R or B, for each node, \"print\" outputs a visual tree.)" << endl;
+    cout << endl << "Enter command (add, delete, print, printlist, search, exit):" << endl << "(\"printlist\" displays parent/value/R or B, for each node, \"print\" outputs a visual tree.)" << endl;
     cin >> input;
 
     //compare strings to look for words
@@ -117,9 +120,47 @@ int main(){
       cin >> value;
       add(value, root);
     }
+    if (!strcmp(input, (char*)"search")){
+      cout<<"Enter a number to search in tree"<<endl;
+      cin >> value;
+
+      int find=0;
+      searchTree(root, root, value, find);
+
+      if (find==1){
+	cout<<value<<" is inside the tree"<<endl;
+
+      }
+      else{
+	cout<<value<< " is not inside the tree"<<endl;
+      }	
+    }
     if (!strcmp(input, (char*)"delete")) {
-      cout << "Enter number to delete"
+      cout << "Enter a number to delete "<<endl;
+      cin>>value;
+
+      int find = 0;
+
+      searchTree(root, root, value, find);
+
+
+      if(find ==1){
+	cout<<"deleting "<<value<< " from the tree.";
+	  TreeNode* temp = root;
+	deleteTree(temp, root, value);
+	if(temp->getColor() == 1){
+	  restructure(temp);
+	}
+	deleteNode(temp, root);
+
+      }
        
+    
+    else{
+
+      cout<<value<<"was not found in the tree."<<endl;
+      
+    }
     }
     if (!strcmp(input, (char*)"exit")) {
       looping = 0;
@@ -507,4 +548,345 @@ void printRow(int array[1000], int colorArray[1000], int cnt)
   }
 
   printf("\n");
+}
+
+//scans through tree to search for number to delete
+void searchTree(TreeNode* &current, TreeNode* root, int value, int &find){
+  if(root == NULL){
+    cout << "Tree is empty" << endl;
+  }
+
+  if(current == NULL){
+    return;
+  }
+  
+  if(current->getValue() == value){
+    //   cout << value << " is in the tree. Deleting " << value << "." << endl;
+    find = 1; 
+    return;
+  }
+  //scan left
+  if(current->getLeft() != NULL){
+    TreeNode* temp = current->getLeft();
+    searchTree(temp, root, value, find);
+  }
+
+  //scan right
+  if(current->getRight() != NULL){
+    TreeNode* temp1 = current->getRight();
+    searchTree(temp1, root, value, find);
+  }
+ 
+
+}
+
+void deleteTree(TreeNode* &root, TreeNode* &treeRoot, int deletedNumber){
+
+  //Nothing
+  if(root == NULL){
+    return;
+  }
+
+  //deleted Number is bigger than the root, recursive call for root right child
+  if(deletedNumber > root->getValue()){
+    root = root->getRight();
+    deleteTree(root, treeRoot, deletedNumber);
+    return;
+  }
+
+  //deleted Number is less than the root, recursive call for root left child
+  if(deletedNumber < root->getValue()){
+    root = root->getLeft();
+    deleteTree(root, treeRoot, deletedNumber);
+    //root->setLeft(temp);
+    return;
+  }
+
+  //deleted Number is equal to root
+  if(deletedNumber == root->getValue()){
+    // if is leaf node to delete
+    if(root->getLeft() == NULL && root->getRight() == NULL) {
+       return;  // if is leaf node
+     }  
+
+    // if left child is not null, find the max from the left, and promot to root
+    if (root->getLeft() != NULL){
+      TreeNode* temp = root->getLeft();
+      while(temp->getRight() != NULL){
+	temp = temp->getRight();
+      }
+      //cout << temp->getValue() << endl;
+      root->setValue(temp->getValue());
+      temp->setValue(deletedNumber);
+      root = temp; 
+      deleteTree(root, treeRoot, deletedNumber);
+      return;
+    }
+    
+    if (root->getRight() != NULL){
+      TreeNode* temp = root->getRight();
+      while(temp->getLeft() != NULL){
+	temp = temp->getLeft();
+      }
+      root->setValue(temp->getValue());
+      temp->setValue(deletedNumber);
+      root = temp;
+      
+      deleteTree(root, treeRoot, deletedNumber);
+      return;
+    }
+
+  }
+  
+}
+
+
+void restructure(TreeNode* &current){
+
+  
+  if(current->getParent() == NULL) {   // if it is root 
+    return;
+  }
+
+  //Black sibling with red child, current is left child
+  if(current->getParent()->getLeft() == current){
+    TreeNode* rightSibling = current->getParent()->getRight();
+    if(rightSibling->getColor() == 1){
+
+      // black right sibling with red child (on right)
+      if(rightSibling->getRight() != NULL && rightSibling->getRight()->getColor() == 0){
+	
+	TreeNode* p = current->getParent();
+	TreeNode* z = rightSibling->getRight();
+	TreeNode* x = rightSibling->getLeft();
+	TreeNode* s = rightSibling;
+	
+	int pValue = p->getValue();
+	int sValue = rightSibling->getValue();
+
+	p->setValue(sValue);
+	p->setRight(z);
+	z->setColor(1);
+	z->setParent(p);
+	p->setLeft(s);
+	s->setValue(pValue);
+	s->setParent(p);
+	s->setRight(x);
+	s->setLeft(current);
+	current->setParent(s);
+	return;
+      }
+
+
+      // black right sibling with red child (on left)
+      if(rightSibling->getLeft() != NULL && rightSibling->getLeft()->getColor() == 0){
+	TreeNode* p = current->getParent();
+	TreeNode* s = rightSibling;
+	TreeNode* z = s->getLeft();
+	TreeNode* a = z->getLeft();
+	TreeNode* b = z->getRight();
+
+	int pValue = p->getValue();
+	int zValue = z->getValue();
+
+	p->setValue(zValue);
+	s->setLeft(b);
+	if(b != NULL){
+	  b->setParent(s);
+	}
+	p->setValue(zValue);
+	p->setLeft(z);
+	z->setValue(pValue);
+	z->setParent(p);
+	z->setColor(1);
+	z->setRight(a);
+	z->setLeft(current);
+	current->setParent(z);
+	return;
+
+      }
+
+      // black right sibling with black child (both) and red parent
+      if(current->getParent()->getColor() == 0 && (rightSibling->getLeft() == NULL || rightSibling->getLeft()->getColor() == 1) && (rightSibling->getRight() == NULL || rightSibling->getRight()->getColor() == 1)){
+	current->getParent()->setColor(1);
+	rightSibling->setColor(0);
+	return; 
+	}
+
+      // black right sibling with black child (both), and black parent
+      if(current->getParent()->getColor() == 1 && (rightSibling->getLeft() == NULL || rightSibling->getLeft()->getColor() == 1) && (rightSibling->getRight() == NULL || rightSibling->getRight()->getColor() == 1)){
+	rightSibling->setColor(0);
+	TreeNode* parent = current->getParent();
+	restructure(parent);
+	return; 
+      }    
+
+    }
+
+    // if right sibling is RED
+    if(rightSibling->getColor() == 0){
+      TreeNode* p = current->getParent();
+      TreeNode* s = rightSibling;
+      TreeNode* x = rightSibling->getLeft();
+      TreeNode* y = rightSibling->getRight();
+
+      int pValue = p->getValue();
+      int sValue = s->getValue();
+
+      p->setValue(sValue);
+      p->setRight(y);
+      if(y != NULL){
+	y->setParent(p);
+      }
+      p->setLeft(s);
+      s->setParent(p);
+      s->setValue(pValue);
+      s->setRight(x);
+      s->setLeft(current);
+      current->setParent(s);
+      restructure(current);
+      return;
+    }
+  }
+
+  
+  //START MIRROR FOR RIGHT SIDE
+  /*
+MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRRO MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR MIRROR 
+   */
+  // Black sibling with red child, current is RIGHT child
+  // cout << "current value to delete:" << current->getValue() << endl;
+  
+  if (current->getParent()->getRight() == current){
+    TreeNode* leftSibling = current->getParent()->getLeft();
+    if(leftSibling->getColor() == 1){
+
+      // cout << "left sibling is black" << endl;
+      
+      // black right sibling with red child (on left)
+      if(leftSibling->getLeft() != NULL && leftSibling->getLeft()->getColor() == 0){
+	
+        TreeNode* p = current->getParent();
+        TreeNode* z = leftSibling->getLeft();
+        TreeNode* x = leftSibling->getRight();
+        TreeNode* s = leftSibling;
+
+        int pValue = p->getValue();
+        int sValue = leftSibling->getValue();
+
+        p->setRight(s);
+        p->setValue(sValue);
+        p->setLeft(z);
+        z->setColor(1);
+        z->setParent(p);
+        
+        s->setValue(pValue);
+        s->setParent(p);
+        s->setLeft(x);
+        s->setRight(current);
+        current->setParent(s);
+
+        return;
+      }
+   // black left sibling with red child (on right)
+      if(leftSibling->getRight() != NULL && leftSibling->getRight()->getColor() == 0){
+        TreeNode* p = current->getParent();
+        TreeNode* s = leftSibling;
+        TreeNode* z = s->getRight();
+        TreeNode* a = z->getRight();
+        TreeNode* b = z->getLeft();
+
+       int pValue = p->getValue();
+        int zValue = z->getValue();
+
+        p->setValue(zValue);
+        s->setRight(b);
+        if(b != NULL){
+          b->setParent(s);
+        }
+        p->setValue(zValue);
+        p->setRight(z);
+        z->setValue(pValue);
+        z->setParent(p);
+        z->setColor(1);
+        z->setLeft(a);
+        z->setRight(current);
+        current->setParent(z);
+        return;
+      }
+       // black left sibling with black child (both) and red parent
+      if(current->getParent()->getColor() == 0 && (leftSibling->getRight() == NULL || leftSibling->getRight()->getColor() == 1) && (leftSibling->getLeft() == NULL || leftSibling->getLeft()->getColor() == 1\
+)){
+        current->getParent()->setColor(1);
+        leftSibling->setColor(0);
+	return;
+        }
+
+      // black left sibling with black child (both), and black parent
+      if(current->getParent()->getColor() == 1 && (leftSibling->getRight() == NULL || leftSibling->getRight()->getColor() == 1) && (leftSibling->getLeft() == NULL || leftSibling->getLeft()->getColor() == 1\
+)){
+        leftSibling->setColor(0);
+        TreeNode* parent = current->getParent();
+        restructure(parent);
+	return;
+      }
+
+    }
+
+    
+    //RED SIBLING
+     if(leftSibling->getColor() == 0){
+      TreeNode* p = current->getParent();
+      TreeNode* s = leftSibling;
+      TreeNode* x = leftSibling->getRight();
+      TreeNode* y = leftSibling->getLeft();
+
+      int pValue = p->getValue();
+      int sValue = s->getValue();
+
+      p->setValue(sValue);
+      p->setLeft(y);
+      if(y != NULL){
+        y->setParent(p);
+      }
+      p->setRight(s);
+      s->setParent(p);
+      s->setValue(pValue);
+      s->setLeft(x);
+      s->setRight(current);
+      current->setParent(s);
+      restructure(current);
+      return;
+    }
+  
+  }
+
+  
+}
+
+
+void deleteNode(TreeNode* &current, TreeNode* &treeRoot){
+
+  if (current == NULL) {
+    return;
+  }
+
+  if (current == treeRoot) {
+    delete current;
+    treeRoot = NULL;
+    return;
+  }
+
+  if (current->getParent()->getLeft() ==current) {
+    current->getParent()->setLeft(NULL);
+    delete current;
+    current= NULL;
+    return;
+  }
+
+  if (current->getParent()->getRight()== current) {
+      current->getParent()->setRight(NULL);
+      delete current;
+      current =NULL; 
+  }
 }
