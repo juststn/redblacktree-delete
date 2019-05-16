@@ -28,8 +28,8 @@ PART2:
 
 DELETE and SEARCH function added:
 
-delete command asks for a number to delete, and deletes it
-search asks for number to search for, and will reply whether the number exists in the tree.
+delete command: removes a number from the tree, and updates it
+search: searchs for the inputted number and returns whether it is in the tree
 */
 
 //function prototypes
@@ -123,8 +123,9 @@ int main(){
       printList(root);
     }
     if (!strcmp(input, (char*)"add")) {
-      cout << "Enter a number to add to tree (up to 3 digits):" << endl;
+      cout << "Enter a number to add to tree (up to 3 digits, no duplicates):" << endl;
       cin >> value;
+      
       add(value, root);
     }
     //search for a number
